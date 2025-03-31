@@ -12,10 +12,13 @@ namespace sylar
     class Scheduler
     {
     public:
+        // threads指定线程数量，use_caller指定是否将主线程作为工作线程，name是调度器的名称
         Scheduler(size_t threads = 1, bool use_caller = true, const std::string &name = "Scheduler");
 
+        // 防止出现资源泄露，基类指针删除派生类对象时不完全销毁的问题
         virtual ~Scheduler();
 
+        // 获取调度器名字
         const std::string &getName() const { return m_name; }
 
     public:
@@ -37,30 +40,41 @@ namespace sylar
             // empty -> all thread is idle -> need to be waken up
             need_tickle = m_tasks.empty();
 
+            // 创建Task的任务对象
             ScheduleTask task(fc, thread);
             if (task.fiber || task.cb)
             {
                 m_tasks.push_back(task);
             }
 
+            // 如果检查出了队列为空，就唤醒线程
             if (need_tickle)
             {
                 tickle();
             }
         }
 
+        // 启动线程池
+        virtual void start();
+
+        // 关闭线程池
+        virtual void stop();
+
     protected:
+        // 唤醒线程
         virtual void tickle();
 
         // 线程函数
         virtual void run();
 
-        // 空闲协程函数
+        // 空闲协程函数，无任务调度时执行idle
         virtual void idle();
 
         // 是否可以关闭
         virtual bool stopping();
 
+        // 返回是否有空闲线程
+        // 当调度协程进入idle时空闲线程数+1，从idle协程返回时空闲线程数-1
         bool hasIdleThreads() { return m_idleThreadCount > 0; }
 
     private:
@@ -86,6 +100,7 @@ namespace sylar
 
             ScheduleTask(std::shared_ptr<Fiber> *f, int thr)
             {
+                // 将内容转移，即指针内部的转移和上面的赋值不通，引用计数不会增加
                 fiber.swap(*f);
                 thread = thr;
             }
@@ -102,6 +117,7 @@ namespace sylar
                 thread = thr;
             }
 
+            // 重置
             void reset()
             {
                 fiber = nullptr;
@@ -111,6 +127,7 @@ namespace sylar
         };
 
     private:
+        // 调度器名称
         std::string m_name;
 
         // 互斥锁 -> 保护任务队列
