@@ -68,7 +68,7 @@ namespace sylar
         // id
         uint64_t m_id = 0;
         // 栈大小
-        uint32_t m_staciSize = 0;
+        uint32_t m_stackSize = 0;
         // 协程状态
         State m_state = READY;
         // 协程上下文

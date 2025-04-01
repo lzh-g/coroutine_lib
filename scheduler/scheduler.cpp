@@ -154,12 +154,13 @@ namespace sylar
 
         SetThis();
 
-        // 运行在新创建的线程 -> 需要创建主协程
+        // 运行在新创建的线程 -> 需要创建主协程，每个线程都有一个主协程
         if (thread_id != m_rootThread)
         {
             Fiber::GetThis();
         }
 
+        // 每个线程都有一个空闲协程
         std::shared_ptr<Fiber> idle_fiber = std::make_shared<Fiber>(std::bind(&Scheduler::idle, this));
         ScheduleTask task;
 

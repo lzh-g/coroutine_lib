@@ -24,8 +24,8 @@ namespace sylar
         m_state = READY;
 
         // 分配协程栈空间
-        m_staciSize = stacksize ? stacksize : 128000;
-        m_stack = malloc(m_staciSize);
+        m_stackSize = stacksize ? stacksize : 128000;
+        m_stack = malloc(m_stackSize);
 
         if (getcontext(&m_ctx))
         {
@@ -36,7 +36,7 @@ namespace sylar
         // 没设置后继上下文，运行完MainFunc后协程推出，会调用依次yield返回主协程
         m_ctx.uc_link = nullptr;
         m_ctx.uc_stack.ss_sp = m_stack;
-        m_ctx.uc_stack.ss_size = m_staciSize;
+        m_ctx.uc_stack.ss_size = m_stackSize;
         makecontext(&m_ctx, &Fiber::MainFunc, 0);
 
         m_id = s_fiber_id++;
@@ -77,7 +77,7 @@ namespace sylar
 
         m_ctx.uc_link = nullptr;
         m_ctx.uc_stack.ss_sp = m_stack;
-        m_ctx.uc_stack.ss_size = m_staciSize;
+        m_ctx.uc_stack.ss_size = m_stackSize;
         makecontext(&m_ctx, &Fiber::MainFunc, 0);
     }
 
