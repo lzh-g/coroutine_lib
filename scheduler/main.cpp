@@ -14,7 +14,7 @@ void task()
 
 int main(int argc, char const *argv[])
 {
-    std::shared_ptr<Scheduler> scheduler = std::make_shared<Scheduler>(3, false, "scheduler_1");
+    std::shared_ptr<Scheduler> scheduler = std::make_shared<Scheduler>(3, true, "scheduler_1");
 
     scheduler->start();
 

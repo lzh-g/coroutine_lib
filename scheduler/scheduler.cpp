@@ -10,14 +10,14 @@ namespace sylar
     {
         assert(threads > 0 && Scheduler::GetThis() == nullptr);
 
-        SetThis();
-
         Thread::SetName(m_name);
 
         // 使用主线程当作工作线程
         if (use_caller)
         {
             threads--;
+
+            SetThis();
 
             // 创建主协程
             Fiber::GetThis();
