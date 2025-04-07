@@ -11,6 +11,7 @@
 
 namespace sylar
 {
+    // 前向声明
     class TimerManager;
 
     class Timer : public std::enable_shared_from_this<Timer>
@@ -20,9 +21,9 @@ namespace sylar
     public:
         // 从时间堆中删除timer
         bool cancel();
-        // 刷新timer
+        // 刷新timer，将timer的下次触发延后
         bool refresh();
-        // 重设timer的超时时间
+        // 重设timer超时时间，ms定时器指定间隔时间，from_now是否从当前时间开始计算
         bool reset(uint64_t ms, bool from_now);
 
     private:
@@ -48,13 +49,13 @@ namespace sylar
         TimerManager *m_manager = nullptr;
     };
 
+    // 定时器管理类
     class TimerManager
     {
         friend class Timer;
 
     public:
         TimerManager();
-
         virtual ~TimerManager();
 
         // 添加timer
@@ -73,24 +74,24 @@ namespace sylar
         bool hasTimer();
 
     protected:
-        // 当一个最早的timer加入到堆中 -> 调用该函数
+        // 当最早的timer加入到堆中调用该函数
         virtual void onTimerInsertedAtFront() {};
 
         // 添加timer
         void addTimer(std::shared_ptr<Timer> timer);
 
     private:
-        // 当系统时间改变时 -> 调用该函数
+        // 检测系统时间是否发生了回滚（倒退）
         bool detectClockRollover();
 
     private:
         std::shared_mutex m_mutex;
         // 时间堆
         std::set<std::shared_ptr<Timer>, Timer::Comparator> m_timers;
-        // 在下次getNextTime()执行前，onTimerInsertedAtFront()是否已经被触发了 -> 在此过程中 onTimerInsertedAtFront()只触发一次
+        // 在下次getNextTime()执行前onTimerInsertedAtFront()是否已经被触发了 -> 在此过程中 onTimerInsertedAtFront()只执行了一次
         bool m_tickled = false;
         // 上次检查系统时间是否回退的绝对时间
-        std::chrono::time_point<std::chrono::system_clock> m_previouseTime;
+        std::chrono::time_point<std::chrono::system_clock> m_previousTime;
     };
 } // namespace sylar
 
