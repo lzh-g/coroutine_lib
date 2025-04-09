@@ -1,7 +1,7 @@
-#include <unistd.h>
-#include <sys/epoll.h>
-#include <fcntl.h>
 #include <cstring>
+#include <fcntl.h>
+#include <sys/epoll.h>
+#include <unistd.h>
 
 #include "ioscheduler.h"
 
@@ -326,7 +326,7 @@ namespace sylar
                 }
             }
 
-            // collect all timers overdue
+            // collect all timers overdue(逾期)
             std::vector<std::function<void()>> cbs;
             listExpiredCb(cbs);
             if (!cbs.empty())
@@ -353,12 +353,64 @@ namespace sylar
                     }
                     continue;
                 }
-            }
-        }
+
+                // other event
+                FdContext *fd_ctx = (FdContext *)event.data.ptr;
+                std::lock_guard<std::mutex> lock(fd_ctx->mutex);
+
+                // convert EPOLLERR or EPOLLHUP to -> read or write event
+                if (event.events & (EPOLLERR | EPOLLHUP))
+                {
+                    event.events |= (EPOLLIN | EPOLLOUT) & fd_ctx->events;
+                }
+                // events happending during this turn of epoll_wait
+                int real_events = NONE;
+                if (event.events & EPOLLIN)
+                {
+                    real_events |= READ;
+                }
+                if (event.events & EPOLLOUT)
+                {
+                    real_events |= WRITE;
+                }
+
+                if ((fd_ctx->events & real_events) == NONE)
+                {
+                    continue;
+                }
+
+                // delete the events that have already happend
+                int left_events = (fd_ctx->events & ~real_events);
+                int op = left_events ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;
+                event.events = EPOLLET | left_events;
+
+                int rt2 = epoll_ctl(m_epfd, op, fd_ctx->fd, &event);
+                if (rt2)
+                {
+                    std::cerr << "idle::epoll_ctl failed: " << strerror(errno) << std::endl;
+                    continue;
+                }
+
+                // schedule callback and update fdcontext and event context
+                if (real_events & READ)
+                {
+                    fd_ctx->triggerEvent(READ);
+                    --m_pendingEventCount;
+                }
+                if (real_events & WRITE)
+                {
+                    fd_ctx->triggerEvent(WRITE);
+                    --m_pendingEventCount;
+                }
+            } // end for
+
+            Fiber::GetThis()->yield();
+        } // end while(true)
     }
 
     void IOManager::onTimerInsertedAtFront()
     {
+        tickle();
     }
 
     void IOManager::contextResize(size_t size)
