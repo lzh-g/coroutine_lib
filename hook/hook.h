@@ -1,12 +1,12 @@
 #ifndef _HOOK_H_
 #define _HOOK_H_
 
-#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/uio.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
+#include <unistd.h>
 
 namespace sylar
 {
@@ -22,6 +22,24 @@ extern "C"
 
     typedef int (*usleep_fun)(useconds_t usec);
     extern usleep_fun usleep_;
+
+    typedef int (*nanosleep_fun)(const struct timespec *req, struct timespec *rem);
+    extern nanosleep_fun nanosleep_f;
+
+    typedef int (*socket_fun)(int domain, int type, int protocol);
+    extern socket_fun socket_f;
+
+    typedef int (*connect_fun)(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+    extern connect_fun connect_f;
+
+    typedef int (*accept_fun)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+    extern accept_fun accept_f;
+
+    typedef ssize_t (*read_fun)(int fd, void *buf, size_t count);
+    extern read_fun read_f;
+
+    typedef int (*fcntl_fun)(int fd, int cmd, ... /* arg */);
+    extern fcntl_fun fcntl_f;
 }
 
 #endif

@@ -384,7 +384,7 @@ namespace sylar
                 {
                     break;
                 }
-            };
+            }
 
             // collect all timers overdue
             std::vector<std::function<void()>> cbs;
@@ -409,7 +409,8 @@ namespace sylar
                     uint8_t dummy[256];
                     // edge triggered -> exhaust
                     while (read(m_tickleFds[0], dummy, sizeof(dummy)) > 0)
-                        ;
+                    {
+                    }
                     continue;
                 }
 

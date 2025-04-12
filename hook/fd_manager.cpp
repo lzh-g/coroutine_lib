@@ -1,8 +1,8 @@
 #include "fd_manager.h"
 #include "hook.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 namespace sylar
@@ -54,7 +54,7 @@ namespace sylar
             if (!(flags & O_NONBLOCK))
             {
                 // if not -> set to nonblock
-                fcntl_f(m_df, f_SETFL, flags | O_NONBLOCK);
+                fcntl_f(m_fd, F_SETFL, flags | O_NONBLOCK);
             }
             m_sysNonblock = true;
         }
