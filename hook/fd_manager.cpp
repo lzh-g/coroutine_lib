@@ -94,6 +94,7 @@ namespace sylar
     {
         m_datas.resize(64);
     }
+
     std::shared_ptr<FdCtx> FdManager::get(int fd, bool auto_create)
     {
         if (fd == -1)

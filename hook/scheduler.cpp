@@ -35,9 +35,9 @@ namespace sylar
 
             // 创建调度协程
             m_schedulerFiber.reset(new Fiber(std::bind(&Scheduler::run, this), 0, false)); // false -> 该调度协程退出后将返回主协程
-            Fiber::SetSchedulerFiber(m_schedulerFiber.get());
+            Fiber::SetSchedulerFiber(m_schedulerFiber.get());                              // 设置协程的调度器对象
 
-            m_rootThread = Thread::GetThreadId();
+            m_rootThread = Thread::GetThreadId(); // 获取主线程id
             m_threadIds.push_back(m_rootThread);
         }
 
@@ -101,28 +101,26 @@ namespace sylar
             task.reset();
             bool tickle_me = false;
 
+            std::lock_guard<std::mutex> lock(m_mutex);
+            auto it = m_tasks.begin();
+            // 1 遍历任务队列
+            while (it != m_tasks.end())
             {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                auto it = m_tasks.begin();
-                // 1 遍历任务队列
-                while (it != m_tasks.end())
+                if (it->thread != -1 && it->thread != thread_id)
                 {
-                    if (it->thread != -1 && it->thread != thread_id)
-                    {
-                        it++;
-                        tickle_me = true;
-                        continue;
-                    }
-
-                    // 2 取出任务
-                    assert(it->fiber || it->cb);
-                    task = *it;
-                    m_tasks.erase(it);
-                    m_activeThreadCount++;
-                    break;
+                    it++;
+                    tickle_me = true;
+                    continue;
                 }
-                tickle_me = tickle_me || (it != m_tasks.end());
+
+                // 2 取出任务
+                assert(it->fiber || it->cb);
+                task = *it;
+                m_tasks.erase(it);
+                m_activeThreadCount++;
+                break;
             }
+            tickle_me = tickle_me || (it != m_tasks.end());
 
             if (tickle_me)
             {
@@ -145,10 +143,10 @@ namespace sylar
             else if (task.cb)
             {
                 std::shared_ptr<Fiber> cb_fiber = std::make_shared<Fiber>(task.cb);
-                {
-                    std::lock_guard<std::mutex> lock(cb_fiber->m_mutex);
-                    cb_fiber->resume();
-                }
+
+                std::lock_guard<std::mutex> lock(cb_fiber->m_mutex);
+                cb_fiber->resume();
+
                 m_activeThreadCount--;
                 task.reset();
             }
@@ -159,7 +157,10 @@ namespace sylar
                 if (idle_fiber->getState() == Fiber::TERM)
                 {
                     if (debug)
+                    {
                         std::cout << "Schedule::run() ends in thread: " << thread_id << std::endl;
+                    }
+
                     break;
                 }
                 m_idleThreadCount++;
@@ -204,7 +205,9 @@ namespace sylar
         {
             m_schedulerFiber->resume();
             if (debug)
+            {
                 std::cout << "m_schedulerFiber ends in thread:" << Thread::GetThreadId() << std::endl;
+            }
         }
 
         std::vector<std::shared_ptr<Thread>> thrs;
@@ -230,7 +233,10 @@ namespace sylar
         while (!stopping())
         {
             if (debug)
+            {
                 std::cout << "Scheduler::idle(), sleeping in thread: " << Thread::GetThreadId() << std::endl;
+            }
+
             sleep(1);
             Fiber::GetThis()->yield();
         }

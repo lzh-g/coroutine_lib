@@ -1,9 +1,9 @@
 #ifndef _FD_MANAGER_H_
 #define _FD_MANAGER_H_
 
+#include "thread.h"
 #include <memory>
 #include <shared_mutex>
-#include "thread.h"
 
 namespace sylar
 {
@@ -18,8 +18,9 @@ namespace sylar
         bool init();
         bool isInit() const { return m_isInit; }
         bool isSocket() const { return m_isSocket; }
+        bool isClosed() const { return m_isClosed; }
 
-        void setUseNonBlock(bool v)
+        void setUserNonblock(bool v)
         {
             m_userNonblock = v;
         }
